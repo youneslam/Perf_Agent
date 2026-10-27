@@ -10,8 +10,10 @@ import typer
 from dotenv import load_dotenv
 
 from perf_agent.config.scenario import Scenario, ScenarioError, load_scenario
+from perf_agent.versions.manager import VersionError, VersionManager
 
 EXIT_INVALID_SCENARIO = 2
+EXIT_INVALID_WORKSPACE = 2
 
 app = typer.Typer(
     name="perf-agent",
@@ -59,6 +61,40 @@ def validate(
         f"  objective : +{objective.target_gain_pct:g} % total, "
         f"accept a trial at +{objective.accept_threshold_pct:g} %"
     )
+
+
+@app.command()
+def versions(
+    workspace: Annotated[
+        Path, typer.Argument(metavar="WORKSPACE", help="Folder containing graph_V1/, graph_V2/, …")
+    ],
+    prefix: Annotated[str, typer.Option("--prefix", help="Version name prefix.")] = "graph",
+) -> None:
+    """List version folders in numeric order, and leftover *_trial folders."""
+    manager = VersionManager(workspace, prefix)
+    try:
+        names = manager.list_versions()
+        trials = manager.list_trials()
+    except VersionError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(EXIT_INVALID_WORKSPACE) from exc
+
+    if not names:
+        typer.echo(f"no {prefix}_V<n> folder in {manager.workspace}")
+    for name in names:
+        typer.echo(_describe_version(manager, name))
+    if trials:
+        typer.echo(f"leftover trials: {', '.join(trials)}")
+
+
+def _describe_version(manager: VersionManager, name: str) -> str:
+    try:
+        info = manager.read_info(name)
+    except ValueError:
+        return f"{name}  (unreadable VERSION.json)"
+    if info is None:
+        return name
+    return f"{name}  ({info.gain_pct:+.1f} %, from {info.parent}: {info.idea_title})"
 
 
 def _check_base_version(scenario: Scenario) -> str | None:

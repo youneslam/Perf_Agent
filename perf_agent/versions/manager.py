@@ -1,4 +1,4 @@
-"""Version folders: every version is a complete copy of the project (spec 03).
+"""Version folders: every version is a complete copy of the project.
 
 ```
 workspace/
@@ -31,11 +31,11 @@ VERSION_INFO_FILE = "VERSION.json"
 # (build output); other entries are file-name patterns skipped at any depth.
 DEFAULT_IGNORE = ["out/", "target/", "build/", ".gradle/", "*.class"]
 
-
+#The exception raised when a version folder is missing, badly named, already exists or may not be touched.
 class VersionError(Exception):
     """A version folder is missing, badly named, already exists or may not be touched."""
 
-
+#The version information stored in `VERSION.json` in every promoted folder. It includes the name of the version, the name of its parent version, the creation timestamp, the gain percentage, and the title of the idea that led to this version.
 class VersionInfo(BaseModel):
     """Content of `VERSION.json`, written in every promoted folder."""
 
@@ -50,7 +50,7 @@ class VersionInfo(BaseModel):
 
 class VersionManager:
     """Creates, promotes and discards version folders inside one workspace."""
-
+    #This is the class that manages the version folders in the workspace. It can create new trial folders, promote them to new versions, discard them, and read the version information from the `VERSION.json` file. It also provides methods to list the existing versions and trials, and to get the latest version or the next version name.
     def __init__(self, workspace: Path, prefix: str, ignore: list[str] | None = None) -> None:
         self._workspace = workspace.resolve()
         self._prefix = prefix
@@ -61,28 +61,29 @@ class VersionManager:
         self._trial_re = re.compile(rf"^{re.escape(prefix)}_V(\d+)_trial$")
 
     @property
+    #GET The workspace path where the version folders are located.
     def workspace(self) -> Path:
         return self._workspace
-
+    #get the prefix used for the version folder names (e.g. "graph" for "graph_V1").
     def list_versions(self) -> list[str]:
         """Promoted versions only, in numeric order (`graph_V2` before `graph_V10`)."""
         return self._names_matching(self._version_re)
-
+    #get the list of trial folders (e.g. "graph_V3_trial") in numeric order.
     def list_trials(self) -> list[str]:
         """Leftover or current `*_trial` folders, in numeric order."""
         return self._names_matching(self._trial_re)
-
+    #get the latest promoted version (e.g. "graph_V2"); raise if none exist.
     def latest(self) -> str:
         versions = self.list_versions()
         if not versions:
             raise VersionError(f"no {self._prefix}_V<n> folder in {self._workspace}")
         return versions[-1]
-
+    #get the next version name (e.g. "graph_V3") based on the highest existing version number.
     def next_name(self) -> str:
         """`<prefix>_V<max+1>`, where max is the highest promoted version number."""
         numbers = [self._number(name) for name in self.list_versions()]
         return f"{self._prefix}_V{max(numbers, default=0) + 1}"
-
+    #check that a version folder exists and is valid; return its path or raise `VersionError`.
     def check_base(self, name: str) -> Path:
         """Return the folder of version `name`; raise `VersionError` if it is missing."""
         if not self._version_re.match(name):
@@ -91,7 +92,8 @@ class VersionManager:
         if not path.is_dir():
             raise VersionError(f"version folder not found: {path}")
         return path
-
+    
+    #create a new trial folder by copying an existing version folder; return the path of the new trial folder.
     def create_trial(self, base: str) -> Path:
         """Copy version `base` to `<next_name>_trial/`, without build output."""
         source = self.check_base(base)
@@ -105,7 +107,7 @@ class VersionManager:
             raise VersionError(f"cannot copy {source} to {trial}: {exc}") from exc
         logger.info("created trial %s from %s", trial.name, base)
         return trial
-
+    #promote a trial folder to a new version by writing the `VERSION.json` file and renaming the folder; return the new version name.
     def promote(self, trial_dir: Path, parent: str, gain_pct: float, idea_title: str) -> str:
         """Write `VERSION.json`, then rename `<x>_trial/` to `<x>/`; return `<x>`."""
         trial = self._own_trial(trial_dir)

@@ -1,1 +1,1 @@
-"""Version folders on disk (spec 03)."""
+"""Version folders on disk."""
