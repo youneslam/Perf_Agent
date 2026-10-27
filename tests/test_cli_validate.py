@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -32,9 +33,7 @@ def test_validate_stub_project_exits_0() -> None:
 
 
 def test_missing_component_file_exits_2(stub_copy: Path) -> None:
-    component = (
-        stub_copy.parent / "project/graph_V1/src/main/java/com/example/graph/Component.java"
-    )
+    component = stub_copy.parent / "project/graph_V1/src/main/java/com/example/graph/Component.java"
     component.unlink()
 
     result = runner.invoke(app, ["validate", str(stub_copy)])
@@ -78,3 +77,16 @@ def test_no_arguments_shows_help() -> None:
     result = runner.invoke(app, [])
 
     assert "validate" in result.output
+
+
+def test_env_file_is_read_from_the_current_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".env").write_text("PERF_AGENT_TEST_VAR=from-cwd\n", encoding="utf-8")
+    monkeypatch.delenv("PERF_AGENT_TEST_VAR", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    runner.invoke(app, ["validate", str(STUB_SCENARIO)])
+
+    assert os.environ.get("PERF_AGENT_TEST_VAR") == "from-cwd"
+    monkeypatch.delenv("PERF_AGENT_TEST_VAR")

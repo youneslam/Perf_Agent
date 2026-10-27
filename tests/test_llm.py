@@ -262,3 +262,44 @@ def test_live_anthropic_structured_output() -> None:
 
     assert idea.title
     assert registry.spent_usd > 0
+
+
+# --- retry policy and OpenAI prices ------------------------------------------------------------
+
+
+class _HTTPError(Exception):
+    """Mimics a provider SDK error, which carries the HTTP status code."""
+
+    def __init__(self, status_code: int) -> None:
+        super().__init__(f"HTTP {status_code}")
+        self.status_code = status_code
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 404, 422])
+def test_permanent_http_errors_are_not_retried(status: int) -> None:
+    main = ScriptedChatModel(script=[_HTTPError(status), IDEA])
+
+    with pytest.raises(_HTTPError):
+        _registry(main).structured(Idea).invoke(PROMPT)
+    assert len(main.calls) == 1
+
+
+@pytest.mark.parametrize("status", [408, 409, 429, 500, 503, 529])
+def test_temporary_http_errors_are_retried(status: int) -> None:
+    main = ScriptedChatModel(script=[_HTTPError(status), IDEA])
+
+    assert _registry(main).structured(Idea).invoke(PROMPT) == IDEA
+    assert len(main.calls) == 2
+
+
+def test_permanent_error_still_switches_to_the_fallback() -> None:
+    main = ScriptedChatModel(script=[_HTTPError(404)])
+    backup = ScriptedChatModel(script=[IDEA])
+
+    assert _registry(main, backup).structured(Idea).invoke(PROMPT) == IDEA
+    assert len(main.calls) == 1
+
+
+def test_openai_models_are_priced() -> None:
+    assert cost_usd("openai", "gpt-5.4-nano", 1_000_000, 1_000_000) == pytest.approx(1.45)
+    assert cost_usd("openai", "gpt-6.1-sol", 148, 105) == pytest.approx(0.001346)

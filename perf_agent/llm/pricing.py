@@ -14,6 +14,26 @@ PRICES_USD_PER_MTOK: dict[str, tuple[float, float]] = {
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-sonnet-5": (2.00, 10.00),
     "claude-haiku-5-5": (0.10, 0.50),
+    # OpenAI, standard tier, prompts up to 272K tokens (developers.openai.com/api/docs/pricing,
+    # checked 2026-10-27).
+    "gpt-6.1-sol": (2.00, 10.00),
+    "gpt-6.1-terra": (1.00, 5.00),
+    "gpt-6-astra": (10.00, 50.00),
+    "gpt-6-sol": (2.00, 10.00),
+    "gpt-6-luna": (0.10, 0.50),
+    "gpt-5.6-sol": (4.00, 20.00),
+    "gpt-5.6-terra": (2.00, 12.00),
+    "gpt-5.6-luna": (0.20, 1.20),
+    "gpt-5.5": (5.00, 30.00),
+    "gpt-5.5-pro": (30.00, 180.00),
+    "gpt-5.4": (2.50, 15.00),
+    "gpt-5.4-pro": (30.00, 180.00),
+    "gpt-5.4-mini": (0.75, 4.50),
+    "gpt-5.4-nano": (0.20, 1.25),
+    "gpt-5.3-codex": (1.75, 14.00),
+    "gpt-5.2": (1.75, 14.00),
+    "gpt-5-mini": (0.25, 2.00),
+    "gpt-5-nano": (0.05, 0.40),
 }
 
 # Models already warned about, so the "unknown price" warning is logged once per model.

@@ -136,9 +136,18 @@ class ModelRegistry:
         )
 
 
-# Retry anything except a cut-off answer or an exhausted budget (retrying would not help).
+# Retry temporary failures only: not a cut-off answer, a spent budget or a permanent 4xx error.
 def _is_retryable(error: BaseException) -> bool:
-    return not isinstance(error, (LLMTruncated, BudgetExhausted))
+    if isinstance(error, (LLMTruncated, BudgetExhausted)):
+        return False
+    # Provider SDK errors carry the HTTP status: other 4xx (bad key, unknown model, invalid
+    # request) fail the same way every time.
+    status = getattr(error, "status_code", None)
+    return not (isinstance(status, int) and 400 <= status < 500 and status not in _RETRY_STATUSES)
+
+
+# HTTP 4xx statuses that are temporary: request timeout, conflict, rate limit.
+_RETRY_STATUSES = {408, 409, 429}
 
 
 # Use `fallback` when `primary` fails, except for truncation and budget errors.

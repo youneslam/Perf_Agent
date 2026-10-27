@@ -46,6 +46,10 @@ class VersionManagerPort(Protocol):
         """Delete a rejected or failed trial folder."""
         ...
 
+    def cleanup_stale_trials(self) -> list[Path]:
+        """Delete trial folders left by an interrupted run; return them."""
+        ...
+
 
 class ProjectAdapterPort(Protocol):
     """Read, rewrite, build, test and benchmark the component inside one version folder."""
