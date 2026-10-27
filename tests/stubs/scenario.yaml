@@ -1,0 +1,41 @@
+# Example scenario (spec 01) pointing at the stub project next to this file.
+name: stub-speedup
+workspace: ./project
+base_version: graph_V1
+version_prefix: graph
+
+component:
+  source_file: src/main/java/com/example/graph/Component.java
+  class_name: com.example.graph.Component
+
+project:
+  build_cmd: ["sh", "build.sh"]
+  test_cmd: ["sh", "test.sh"]
+  run_cmd: ["python", "run.py", "{graph}", "{query}"]
+  build_timeout_s: 300
+  test_timeout_s: 300
+  run_timeout_s: 120
+
+benchmark:
+  graphs: [small, medium, large]
+  queries: [q1, q2]
+
+objective:
+  target_gain_pct: 30
+  accept_threshold_pct: 5
+
+limits:
+  max_trials: 5
+  max_no_progress: 2
+  max_consecutive_errors: 3
+  max_build_fixes: 2
+  llm_budget_usd: 5.0
+
+llm:
+  provider: anthropic
+  model: claude-sonnet-5-5
+  max_tokens: 64000
+  fallback: {provider: ollama, model: qwen2.5-coder}
+
+storage:
+  kind: memory
