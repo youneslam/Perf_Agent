@@ -11,3 +11,8 @@ out/
 .coverage
 htmlcov/
 dist/
+.CLAUDE.MD
+
+# agent instructions and specs (kept local only)
+CLAUDE.md
+specs/

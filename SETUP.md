@@ -97,7 +97,7 @@ Browser UI: http://localhost:7474
 ```bash
 ollama pull qwen2.5-coder
 ```
-Then set `provider: ollama` for a role in the scenario.
+Then set `llm.provider: ollama` in the scenario.
 
 ## 8. Wiring the Java repo later (not needed to build the agent)
 
