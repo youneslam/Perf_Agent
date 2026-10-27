@@ -19,9 +19,11 @@ from pydantic import BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
 
+# Default limit on stored output, and the exit code used when a program is missing.
 MAX_OUTPUT_CHARS = 200_000
 COMMAND_NOT_FOUND = 127
 
+# The only environment variables passed to child processes (no secrets).
 _ENV_KEYS = ("PATH", "JAVA_HOME", "HOME", "LANG")
 # Without these, Windows programs (including java.exe and python.exe) fail to start.
 _WINDOWS_ENV_KEYS = (
@@ -36,6 +38,7 @@ _WINDOWS_ENV_KEYS = (
 )
 
 
+# Everything about one finished command: exit code, output, duration, timeout.
 class ProcessResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -46,11 +49,13 @@ class ProcessResult(BaseModel):
     duration_ns: int
     timed_out: bool
 
+    # True when the command exited with 0 and did not time out.
     @property
     def ok(self) -> bool:
         return self.returncode == 0 and not self.timed_out
 
 
+# Build the clean environment for a child process, plus explicit extras.
 def minimal_env(extra: dict[str, str] | None = None) -> dict[str, str]:
     """The few variables a build or a JVM needs, plus `extra`. Nothing else is inherited."""
     keys = _ENV_KEYS + (_WINDOWS_ENV_KEYS if sys.platform == "win32" else ())
@@ -59,6 +64,7 @@ def minimal_env(extra: dict[str, str] | None = None) -> dict[str, str]:
     return env
 
 
+# Run one command safely: no shell, timeout, captured output, minimal environment.
 def run(
     cmd: list[str],
     cwd: Path,
@@ -123,6 +129,7 @@ def run(
     )
 
 
+# Resolve a relative program path like ./build.sh against the command's folder.
 def _resolve_executable(cmd: list[str], cwd: Path) -> list[str]:
     """Make a relative program path such as `./build.sh` relative to `cwd` on every OS."""
     if not cmd:
@@ -134,6 +141,7 @@ def _resolve_executable(cmd: list[str], cwd: Path) -> list[str]:
     return list(cmd)
 
 
+# Windows flag that lets us kill the command together with its children.
 def _creation_flags() -> int:
     """On Windows, start the command in its own process group so it can be killed as a tree."""
     if sys.platform == "win32":
@@ -141,6 +149,7 @@ def _creation_flags() -> int:
     return 0
 
 
+# Kill a timed-out command and every process it started.
 def _kill_tree(process: subprocess.Popen[str]) -> None:
     """Kill the process and everything it started."""
     try:
@@ -159,6 +168,7 @@ def _kill_tree(process: subprocess.Popen[str]) -> None:
     process.kill()
 
 
+# Keep only the end of very long output, with a note saying how much was cut.
 def _truncate(text: str, limit: int | None) -> str:
     if limit is None or len(text) <= limit:
         return text

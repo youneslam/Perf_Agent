@@ -13,10 +13,12 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 
+# Base class for all models: unknown fields are rejected.
 class _Model(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+# One benchmark case: a graph and a query.
 class Combo(_Model):
     """One benchmark case: a graph and a query passed to `run_cmd`."""
 
@@ -28,6 +30,7 @@ class Combo(_Model):
         return f"{self.graph}::{self.query}"
 
 
+# The result of running one combo once: its time and its output fingerprint.
 class Measurement(_Model):
     """One execution of `run_cmd` for a combo; warmup is done inside the Java class itself."""
 
@@ -36,22 +39,26 @@ class Measurement(_Model):
     output_hash: str
 
 
+# All measurements of one version folder.
 class BenchmarkResult(_Model):
     version: str
     measurements: list[Measurement]
 
 
+# Whether a build succeeded, with its log and duration.
 class BuildResult(_Model):
     ok: bool
     log: str
     duration_ns: int
 
 
+# Whether the tests passed, with their log.
 class TestResult(_Model):
     ok: bool
     log: str
 
 
+# The Planner's proposal: one optimization to try.
 class Idea(_Model):
     title: str
     rationale: str
@@ -59,11 +66,13 @@ class Idea(_Model):
     risk: Literal["low", "medium", "high"] = "medium"
 
 
+# The Critic's feedback on a trial and the direction for the next one.
 class Critique(_Model):
     explanation: str
     next_direction: str
 
 
+# How a trial ended; only ACCEPTED creates a new version.
 class TrialStatus(StrEnum):
     ACCEPTED = "accepted"
     REJECTED_NO_GAIN = "rejected_no_gain"
@@ -72,6 +81,7 @@ class TrialStatus(StrEnum):
     ERROR = "error"
 
 
+# The full record of one optimization attempt.
 class Trial(_Model):
     index: int
     base_version: str
@@ -87,6 +97,7 @@ class Trial(_Model):
     finished_at: datetime
 
 
+# Why the optimization loop stopped.
 class StopReason(StrEnum):
     OBJECTIVE_REACHED = "objective_reached"
     NO_PROGRESS = "no_progress"
@@ -96,6 +107,7 @@ class StopReason(StrEnum):
     CANCELLED = "cancelled"
 
 
+# The final result of a run, saved as run.json for the front end.
 class RunSummary(_Model):
     run_id: str
     scenario_name: str
@@ -108,9 +120,11 @@ class RunSummary(_Model):
     llm_cost_usd: float
 
 
+# Raised when the LLM budget is spent; the run then stops.
 class BudgetExhausted(Exception):
     """Raised by `ModelRegistryPort.check_budget` once the LLM budget is spent."""
 
 
+# Raised when an LLM answer hit max_tokens; the trial becomes ERROR.
 class LLMTruncated(Exception):
     """Raised when an LLM answer was cut off by `max_tokens`; the partial answer is never used."""

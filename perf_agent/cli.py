@@ -12,9 +12,11 @@ from dotenv import load_dotenv
 from perf_agent.config.scenario import Scenario, ScenarioError, load_scenario
 from perf_agent.versions.manager import VersionError, VersionManager
 
+# Exit codes for a bad scenario or workspace (0 = success).
 EXIT_INVALID_SCENARIO = 2
 EXIT_INVALID_WORKSPACE = 2
 
+# The `perf-agent` command; each @app.command() below is a sub-command.
 app = typer.Typer(
     name="perf-agent",
     help="Iteratively optimize the performance of one Java component with LLMs.",
@@ -22,6 +24,7 @@ app = typer.Typer(
 )
 
 
+# Runs before every command: set up logging and load the .env file.
 @app.callback()
 def main(
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show debug logs.")] = False,
@@ -34,6 +37,7 @@ def main(
     load_dotenv()
 
 
+# `perf-agent validate SCENARIO`: check a scenario file before running it.
 @app.command()
 def validate(
     scenario_path: Annotated[
@@ -63,6 +67,7 @@ def validate(
     )
 
 
+# `perf-agent versions WORKSPACE`: list the version folders and leftover trials.
 @app.command()
 def versions(
     workspace: Annotated[
@@ -87,6 +92,7 @@ def versions(
         typer.echo(f"leftover trials: {', '.join(trials)}")
 
 
+# One line for a version, with its gain and idea when VERSION.json exists.
 def _describe_version(manager: VersionManager, name: str) -> str:
     try:
         info = manager.read_info(name)
@@ -97,6 +103,7 @@ def _describe_version(manager: VersionManager, name: str) -> str:
     return f"{name}  ({info.gain_pct:+.1f} %, from {info.parent}: {info.idea_title})"
 
 
+# Check that the base version folder and the component file exist.
 def _check_base_version(scenario: Scenario) -> str | None:
     """Return a message if the base version folder or the component file is missing."""
     if not scenario.base_dir.is_dir():
