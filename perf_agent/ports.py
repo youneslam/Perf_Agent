@@ -30,15 +30,16 @@ class VersionManagerPort(Protocol):
     """Version folders on disk: `graph_V1/`, `graph_V2/`, … and the current `*_trial` folder."""
 
     def check_base(self, name: str) -> Path:
-        """Return the folder of version `name`; raise if it is missing or lacks the component."""
+        """Return the folder of version `name`; raise `VersionError` if it is missing."""
         ...
 
     def create_trial(self, base: str) -> Path:
         """Copy version `base` to a new `<prefix>_V<n+1>_trial/` folder and return its path."""
         ...
 
-    def promote(self, trial_dir: Path) -> str:
-        """Turn an accepted trial folder into the next version; return its name (`graph_V2`)."""
+    def promote(self, trial_dir: Path, parent: str, gain_pct: float, idea_title: str) -> str:
+        """Write `VERSION.json`, then turn an accepted trial folder into the next version;
+        return its name (`graph_V2`)."""
         ...
 
     def discard(self, trial_dir: Path) -> None:
